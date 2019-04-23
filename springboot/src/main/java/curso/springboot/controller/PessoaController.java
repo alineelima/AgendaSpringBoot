@@ -13,13 +13,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import curso.springboot.model.Pessoa;
+import curso.springboot.model.Telefone;
 import curso.springboot.repository.PessoaRepository;
+import curso.springboot.repository.TelefoneRepository;
 
 @Controller
 public class PessoaController {
 	
 	@Autowired
 	private PessoaRepository pessoaRepository; //injecao de dependencia
+	@Autowired
+	private TelefoneRepository telefoneRepository;
 	
 	@RequestMapping(method=RequestMethod.GET, value="/cadastroPessoa")
 	public ModelAndView inicio() {
@@ -76,6 +80,42 @@ public class PessoaController {
 		ModelAndView modelAndView = new ModelAndView("cadastro/cadastroPessoa");
 		modelAndView.addObject("pessoas", pessoaRepository.findPessoaByName(nomePesquisa));
 		modelAndView.addObject("objPessoa", new Pessoa());
+		
+		return modelAndView;
+	}
+	
+	@GetMapping("/telefones/{idPessoa}")
+	public ModelAndView telefones(@PathVariable("idPessoa") Long idPessoa) {
+		Optional<Pessoa> pessoa = pessoaRepository.findById(idPessoa);
+		ModelAndView modelAndView = new ModelAndView("cadastro/telefones");
+		modelAndView.addObject("pessoa", pessoa.get());
+		modelAndView.addObject("telefone", telefoneRepository.getTelefones(idPessoa));
+		
+		return modelAndView;
+	}
+	
+	@PostMapping("**/addTelefonePessoa/{pessoaId}")
+	public ModelAndView addFonePessoa(Telefone telefone,
+				@PathVariable("pessoaId") Long pessoaId) {
+		ModelAndView modelAndView = new ModelAndView("cadastro/telefones");
+		Pessoa pessoa = pessoaRepository.findById(pessoaId).get(); //busca a pessoa através dp id
+		telefone.setPessoa(pessoa);
+		telefoneRepository.save(telefone);
+		
+		modelAndView.addObject("pessoa", pessoa);
+		modelAndView.addObject("telefone", telefoneRepository.getTelefones(pessoaId));
+				
+		return modelAndView;
+	}
+	
+	@GetMapping("/removerTelefone/{idNum}")
+	public ModelAndView excluirTelefone(@PathVariable("idNum") Long idNum) {
+		Pessoa pessoa = telefoneRepository.findById(idNum).get().getPessoa();
+		telefoneRepository.deleteById(idNum);
+		
+		ModelAndView modelAndView = new ModelAndView("cadastro/telefones");
+		modelAndView.addObject("pessoa",pessoa);
+		modelAndView.addObject("telefone", telefoneRepository.getTelefones(pessoa.getId()));
 		
 		return modelAndView;
 	}
